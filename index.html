@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Lucky Draw</title>
+    <style>
+        body {
+            font-family: Poppins, sans-serif;
+            background: #eef1ff;
+            display: flex;
+            justify-content: center;
+            padding: 30px;
+        }
+
+        .container {
+            background: white;
+            padding: 25px;
+            width: 350px;
+            border-radius: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        input,
+        button {
+            width: 100%;
+            margin-top: 12px;
+            padding: 12px;
+            border-radius: 12px;
+            border: 1px solid #bbb;
+            font-size: 15px;
+        }
+
+        button {
+            background: #4a4aff;
+            color: white;
+            border: none;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background: #3333ee;
+        }
+
+        #ticket {
+            display: none;
+            background: linear-gradient(135deg, #4a4aff, #6f6fff);
+            color: white;
+            padding: 20px;
+            margin-top: 25px;
+            border-radius: 18px;
+            text-align: center;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .pdf-btn {
+            background: #ffcd00;
+            color: black;
+            font-weight: bold;
+            margin-top: 12px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h2>🎟 Lucky Draw Entry</h2>
+
+        <input id="name" type="text" placeholder="Enter your name">
+        <input id="phone" type="text" placeholder="Enter contact number">
+        <button onclick="submitForm()">Submit</button>
+
+        <div id="ticket">
+            <h3>Your Ticket</h3>
+            <p id="t-name"></p>
+            <p id="t-number" style="font-size: 22px; font-weight: bold;"></p>
+            <button class="pdf-btn" onclick="downloadPDF()">Download Ticket PDF</button>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <script>
+
+        const API_URL = "https://script.google.com/macros/s/AKfycbxxNRyrrifFBefdV5InYotCFk2FMXP1umYnkMSqjr3OWqLEiEcKFIVw7o7_ESS0--sM6w/execL"; // ← paste your Google Script URL
+
+        let lastTicket = "", lastName = "";
+
+        async function submitForm() {
+
+            let name = document.getElementById("name").value.trim();
+            let phone = document.getElementById("phone").value.trim();
+
+            if (!name || !phone) {
+                alert("Please fill all fields!");
+                return;
+            }
+
+            let ticket = "TKT-" + Math.floor(100000 + Math.random() * 900000);
+
+            // Send to Google Sheet
+            let res = await fetch(API_URL, {
+                method: "POST",
+                body: JSON.stringify({ name, phone, ticket }),
+                headers: { "Content-Type": "application/json" }
+            });
+
+            let data = await res.json();
+
+            if (data.status === "duplicate") {
+                alert("❌ Already Registered!");
+                return;
+            }
+
+            // Success → Show Ticket
+            lastTicket = ticket;
+            lastName = name;
+
+            document.getElementById("t-name").innerText = "Name: " + name;
+            document.getElementById("t-number").innerText = "Ticket No: " + ticket;
+
+            document.getElementById("ticket").style.display = "block";
+
+            document.getElementById("name").value = "";
+            document.getElementById("phone").value = "";
+        }
+
+        function downloadPDF() {
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF();
+
+            pdf.setFillColor(74, 74, 255);
+            pdf.rect(0, 0, 210, 297, "F");
+
+            pdf.setFillColor(255, 255, 255);
+            pdf.roundedRect(20, 40, 170, 120, 10, 10, "F");
+
+            pdf.setFontSize(20);
+            pdf.text("Lucky Draw Ticket", 60, 60);
+
+            pdf.setFontSize(16);
+            pdf.text("Name: " + lastName, 40, 100);
+
+            pdf.setFontSize(18);
+            pdf.text("Ticket No: " + lastTicket, 40, 130);
+
+            pdf.save(lastTicket + ".pdf");
+        }
+
+    </script>
+
+</body>
+
+</html>

@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Admin Panel</title>
+    <style>
+        body {
+            font-family: Poppins, sans-serif;
+            padding: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th,
+        td {
+            border: 1px solid #ccc;
+            padding: 10px;
+        }
+
+        button {
+            padding: 10px 20px;
+            border-radius: 10px;
+            background: #4a4aff;
+            color: white;
+            border: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h2>Admin Panel</h2>
+    <button onclick="loadEntries()">Load Entries</button>
+    <button onclick="pickWinner()">Pick Winner</button>
+
+    <h3 id="winner"></h3>
+
+    <table id="table">
+        <tr>
+            <th>Name</th>
+            <th>Phone</th>
+            <th>Ticket</th>
+        </tr>
+    </table>
+
+    <script>
+        const API_URL = "https://script.google.com/macros/s/AKfycbxxNRyrrifFBefdV5InYotCFk2FMXP1umYnkMSqjr3OWqLEiEcKFIVw7o7_ESS0--sM6w/exec"; // same URL
+
+        async function loadEntries() {
+            let res = await fetch(API_URL);
+            let data = await res.json();
+
+            let table = document.getElementById("table");
+            table.innerHTML = "<tr><th>Name</th><th>Phone</th><th>Ticket</th></tr>";
+
+            data.forEach(r => {
+                table.innerHTML += `
+      <tr>
+        <td>${r.name}</td>
+        <td>${r.phone}</td>
+        <td>${r.ticket}</td>
+      </tr>`;
+            });
+        }
+
+        async function pickWinner() {
+            let res = await fetch(API_URL);
+            let data = await res.json();
+
+            if (data.length === 0) {
+                alert("No entries found!");
+                return;
+            }
+
+            let w = data[Math.floor(Math.random() * data.length)];
+
+            document.getElementById("winner").innerHTML =
+                `Winner: <b>${w.name}</b> (Ticket: ${w.ticket})`;
+        }
+    </script>
+
+</body>
+
+</html>
