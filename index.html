@@ -1,104 +1,105 @@
 <!DOCTYPE html>
-<html>
+<html lang="en" class="dark">
 
 <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Lucky Draw</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    keyframes: {
+                        drift: {
+                            '0%': { transform: 'translateY(0) translateX(0)', opacity: 1 },
+                            '100%': { transform: 'translateY(-120vh) translateX(40vw)', opacity: 0 }
+                        }
+                    },
+                    animation: {
+                        drift: 'drift 10s linear infinite'
+                    }
+                }
+            }
+        }
+    </script>
+
     <style>
-        body {
-            font-family: Poppins, sans-serif;
-            background: #eef1ff;
-            display: flex;
-            justify-content: center;
-            padding: 30px;
-        }
-
-        .container {
+        .star {
+            width: 4px;
+            height: 4px;
             background: white;
-            padding: 25px;
-            width: 350px;
-            border-radius: 20px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            position: absolute;
+            animation: blink 1.5s infinite alternate;
         }
 
-        input,
-        button {
-            width: 100%;
-            margin-top: 12px;
-            padding: 12px;
-            border-radius: 12px;
-            border: 1px solid #bbb;
-            font-size: 15px;
-        }
+        @keyframes blink {
+            0% {
+                opacity: 0.2;
+            }
 
-        button {
-            background: #4a4aff;
-            color: white;
-            border: none;
-            font-weight: bold;
-        }
-
-        button:hover {
-            background: #3333ee;
-        }
-
-        #ticket {
-            display: none;
-            background: linear-gradient(135deg, #4a4aff, #6f6fff);
-            color: white;
-            padding: 20px;
-            margin-top: 25px;
-            border-radius: 18px;
-            text-align: center;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-        }
-
-        .pdf-btn {
-            background: #ffcd00;
-            color: black;
-            font-weight: bold;
-            margin-top: 12px;
+            100% {
+                opacity: 1;
+            }
         }
     </style>
 </head>
 
-<body>
+<body
+    class="min-h-screen flex justify-center items-center p-6 bg-gradient-to-b from-gray-900 to-black text-white relative overflow-hidden">
 
-    <div class="container">
-        <h2>🎟 Lucky Draw Entry</h2>
+    <!-- Floating Stars -->
+    <script>
+        for (let i = 0; i < 40; i++) {
+            const s = document.createElement('div');
+            s.classList.add('star');
+            s.style.left = Math.random() * 100 + 'vw';
+            s.style.top = Math.random() * 100 + 'vh';
+            s.style.animation = `drift ${8 + Math.random() * 12}s linear infinite`;
+            document.body.appendChild(s);
+        }
+    </script>
 
-        <input id="name" type="text" placeholder="Enter your name">
-        <input id="phone" type="text" placeholder="Enter contact number">
-        <button onclick="submitForm()">Submit</button>
+    <div class="bg-white dark:bg-gray-800 text-black dark:text-white w-96 p-6 rounded-2xl shadow-xl relative z-10">
+        <h2 class="text-2xl font-bold mb-4 text-center">🎟 Lucky Draw Entry</h2>
 
-        <div id="ticket">
-            <h3>Your Ticket</h3>
-            <p id="t-name"></p>
-            <p id="t-number" style="font-size: 22px; font-weight: bold;"></p>
-            <button class="pdf-btn" onclick="downloadPDF()">Download Ticket PDF</button>
+        <input id="name" type="text" placeholder="Enter your name"
+            class="w-full mt-3 p-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700" />
+
+        <input id="phone" type="text" placeholder="Enter contact number"
+            class="w-full mt-3 p-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700" />
+
+        <button onclick="submitForm()"
+            class="w-full mt-4 p-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold">Submit</button>
+
+        <div id="ticket"
+            class="hidden bg-gradient-to-r from-indigo-600 to-indigo-400 text-white p-5 mt-6 rounded-xl text-center shadow-lg">
+            <h3 class="text-xl font-semibold">Your Ticket</h3>
+            <p id="t-name" class="mt-2 text-lg"></p>
+            <p id="t-number" class="text-2xl font-bold mt-1"></p>
+            <button onclick="downloadPDF()"
+                class="w-full mt-4 p-3 bg-yellow-400 text-black font-bold rounded-xl">Download Ticket PDF</button>
         </div>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
     <script>
-
-        const API_URL = "https://script.google.com/macros/s/AKfycbxxNRyrrifFBefdV5InYotCFk2FMXP1umYnkMSqjr3OWqLEiEcKFIVw7o7_ESS0--sM6w/execL"; // ← paste your Google Script URL
+        const API_URL = "https://script.google.com/macros/s/AKfycbxxNRyrrifFBefdV5InYotCFk2FMXP1umYnkMSqjr3OWqLEiEcKFIVw7o7_ESS0--sM6w/execL";
 
         let lastTicket = "", lastName = "";
 
         async function submitForm() {
-
             let name = document.getElementById("name").value.trim();
             let phone = document.getElementById("phone").value.trim();
 
-            if (!name || !phone) {
-                alert("Please fill all fields!");
-                return;
-            }
+            if (!name || !phone) return alert("Please fill all fields!");
 
             let ticket = "TKT-" + Math.floor(100000 + Math.random() * 900000);
 
-            // Send to Google Sheet
             let res = await fetch(API_URL, {
                 method: "POST",
                 body: JSON.stringify({ name, phone, ticket }),
@@ -107,19 +108,15 @@
 
             let data = await res.json();
 
-            if (data.status === "duplicate") {
-                alert("❌ Already Registered!");
-                return;
-            }
+            if (data.status === "duplicate") return alert("❌ Already Registered!");
 
-            // Success → Show Ticket
             lastTicket = ticket;
             lastName = name;
 
             document.getElementById("t-name").innerText = "Name: " + name;
             document.getElementById("t-number").innerText = "Ticket No: " + ticket;
 
-            document.getElementById("ticket").style.display = "block";
+            document.getElementById("ticket").classList.remove("hidden");
 
             document.getElementById("name").value = "";
             document.getElementById("phone").value = "";
@@ -146,7 +143,6 @@
 
             pdf.save(lastTicket + ".pdf");
         }
-
     </script>
 
 </body>
