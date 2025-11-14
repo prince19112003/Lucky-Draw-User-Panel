@@ -63,7 +63,8 @@
         }
     </script>
 
-    <div class="bg-white dark:bg-gray-800 text-black dark:text-white w-96 p-6 rounded-2xl shadow-xl relative z-10">
+    <div
+        class="bg-white dark:bg-gray-800 text-black dark:text-white w-full max-w-md p-6 rounded-2xl shadow-xl relative z-10">
         <h2 class="text-2xl font-bold mb-4 text-center">🎟 Lucky Draw Entry</h2>
 
         <input id="name" type="text" placeholder="Enter your name"
@@ -72,7 +73,7 @@
         <input id="phone" type="text" placeholder="Enter contact number"
             class="w-full mt-3 p-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700" />
 
-        <button onclick="submitForm()"
+        <button id="submitBtn"
             class="w-full mt-4 p-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold">Submit</button>
 
         <div id="ticket"
@@ -80,19 +81,35 @@
             <h3 class="text-xl font-semibold">Your Ticket</h3>
             <p id="t-name" class="mt-2 text-lg"></p>
             <p id="t-number" class="text-2xl font-bold mt-1"></p>
-            <button onclick="downloadPDF()"
-                class="w-full mt-4 p-3 bg-yellow-400 text-black font-bold rounded-xl">Download Ticket PDF</button>
+            <div class="mt-4 grid grid-cols-2 gap-3">
+                <button id="downloadBtn" class="p-3 bg-yellow-400 text-black font-bold rounded-xl">Download PDF</button>
+                <button id="newEntryBtn" class="p-3 bg-white/20 text-white rounded-xl">New Entry</button>
+            </div>
+        </div>
+
+        <div class="mt-4 text-sm text-center text-slate-300">
+            <a href="admin-login.html" class="underline">Admin Login</a>
         </div>
     </div>
 
+    <!-- jsPDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
     <script>
-        const API_URL = "https://script.google.com/macros/s/AKfycbxxNRyrrifFBefdV5InYotCFk2FMXP1umYnkMSqjr3OWqLEiEcKFIVw7o7_ESS0--sM6w/execL";
+        // REPLACE this with your deployed Apps Script URL if different
+        const API_URL = "https://script.google.com/macros/s/AKfycbxqgT6FDlo-86Jd0lNNEH_ifh9bxvAiA46sSp6g2TH2iuYA7IUFA5_lL9lT53wEqa4vDA/exec";
 
-        let lastTicket = "", lastName = "";
+        let lastTicket = "", lastName = "", lastPhone = "";
 
-        async function submitForm() {
+        document.getElementById("submitBtn").addEventListener("click", submitForm);
+        document.getElementById("downloadBtn").addEventListener("click", downloadPDF);
+        document.getElementById("newEntryBtn").addEventListener("click", () => {
+            document.getElementById("ticket").classList.add("hidden");
+            document.getElementById("name").value = "";
+            document.getElementById("phone").value = "";
+        });
+
+       async function submitForm() {
             let name = document.getElementById("name").value.trim();
             let phone = document.getElementById("phone").value.trim();
 
@@ -100,48 +117,85 @@
 
             let ticket = "TKT-" + Math.floor(100000 + Math.random() * 900000);
 
-            let res = await fetch(API_URL, {
-                method: "POST",
-                body: JSON.stringify({ name, phone, ticket }),
-                headers: { "Content-Type": "application/json" }
-            });
+            try {
+                const res = await fetch(API_URL, {
+                    method: "POST",
+                    body: JSON.stringify({
+                        action: "add",
+                        name,
+                        phone,
+                        ticket
+                    }),
+                    headers: { "Content-Type": "application/json" }
+                });
 
-            let data = await res.json();
+                const data = await res.json().catch(() => ({}));
 
-            if (data.status === "duplicate") return alert("❌ Already Registered!");
+                if (data.status === "duplicate") {
+                    return alert("❌ Phone already registered!");
+                }
 
-            lastTicket = ticket;
-            lastName = name;
+                // ALWAYS show ticket — even if API response is unusual
+                lastTicket = ticket;
+                lastName = name;
+                lastPhone = phone;
 
-            document.getElementById("t-name").innerText = "Name: " + name;
-            document.getElementById("t-number").innerText = "Ticket No: " + ticket;
+                document.getElementById("t-name").innerText = "Name: " + name;
+                document.getElementById("t-number").innerText = "Ticket No: " + ticket;
+                document.getElementById("ticket").classList.remove("hidden");
 
-            document.getElementById("ticket").classList.remove("hidden");
+                document.getElementById("name").value = "";
+                document.getElementById("phone").value = "";
 
-            document.getElementById("name").value = "";
-            document.getElementById("phone").value = "";
+            } catch (err) {
+                console.error(err);
+
+                // Still show ticket even on network errors
+                lastTicket = ticket;
+                lastName = name;
+                lastPhone = phone;
+
+                document.getElementById("t-name").innerText = "Name: " + name;
+                document.getElementById("t-number").innerText = "Ticket No: " + ticket;
+                document.getElementById("ticket").classList.remove("hidden");
+            }
         }
+
 
         function downloadPDF() {
             const { jsPDF } = window.jspdf;
-            const pdf = new jsPDF();
+            const pdf = new jsPDF({
+                orientation: "portrait",
+                unit: "mm",
+                format: "a4"
+            });
 
-            pdf.setFillColor(74, 74, 255);
+            // background
+            pdf.setFillColor(30, 41, 59); // slate
             pdf.rect(0, 0, 210, 297, "F");
 
+            // white card
             pdf.setFillColor(255, 255, 255);
-            pdf.roundedRect(20, 40, 170, 120, 10, 10, "F");
+            pdf.roundedRect(20, 40, 170, 120, 6, 6, "F");
 
-            pdf.setFontSize(20);
-            pdf.text("Lucky Draw Ticket", 60, 60);
+            pdf.setTextColor(30, 41, 59);
+            pdf.setFontSize(22);
+            pdf.text("Lucky Draw Ticket", 105, 60, { align: "center" });
 
             pdf.setFontSize(16);
-            pdf.text("Name: " + lastName, 40, 100);
+            pdf.text("Name: " + lastName, 40, 90);
 
             pdf.setFontSize(18);
-            pdf.text("Ticket No: " + lastTicket, 40, 130);
+            pdf.text("Ticket No: " + lastTicket, 40, 115);
 
-            pdf.save(lastTicket + ".pdf");
+            pdf.setFontSize(12);
+            pdf.text("Contact: " + lastPhone, 40, 140);
+
+            // footer note
+            pdf.setFontSize(10);
+            pdf.text("Generated via Lucky Draw", 105, 170, { align: "center" });
+
+            pdf.save((lastTicket || "ticket") + ".pdf");
         }
     </script>
 
